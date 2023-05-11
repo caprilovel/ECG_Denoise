@@ -1,0 +1,10 @@
+*.pth
+*.ipynb
+*.log
+
+.ipynb_checkpoints/
+__pycache__/
+test/
+log/
+model_data/
+data/*
