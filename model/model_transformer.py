@@ -487,7 +487,7 @@ class OutputProj(nn.Module):
 
 ######################Transformer########################
 class Transformer(nn.Module):
-    def __init__(self, token_projection='linear', token_mlp='leff') -> None:
+    def __init__(self, token_projection='linear', token_mlp='leff', skip_connect=True) -> None:
         super(Transformer, self).__init__()
         
         self.inputproj = InputProj()
@@ -517,6 +517,7 @@ class Transformer(nn.Module):
         self.upsample4 = UpSample(64, 32)
         
         self.outproj = OutputProj()
+        self.skip_connect = skip_connect
         
     def forward(self, x):
         x_proj = self.inputproj(x)
@@ -530,13 +531,22 @@ class Transformer(nn.Module):
         x4 = self.downsample4(self.trans_enc4(x3))
 
         y1 = self.upsample1(self.trans_dec1(x4))
-        
-        y2 = self.upsample2(self.trans_dec2(x3 + y1))
-        
-        y3 = self.upsample3(self.trans_dec3(x2 + y2))
-        
-        y4 = self.upsample4(self.trans_dec4(x1 + y3))
-        
-        y_proj = self.outproj(x_proj + y4)
+        if self.skip_connect:
+            
+            y2 = self.upsample2(self.trans_dec2(x3 + y1))
+            
+            y3 = self.upsample3(self.trans_dec3(x2 + y2))
+            
+            y4 = self.upsample4(self.trans_dec4(x1 + y3))
+            
+            y_proj = self.outproj(x_proj + y4)
+        else:
+            y2 = self.upsample2(self.trans_dec2(y1))
+            
+            y3 = self.upsample3(self.trans_dec3(y2))
+            
+            y4 = self.upsample4(self.trans_dec4(y3))
+            
+            y_proj = self.outproj(y4)
         
         return y_proj

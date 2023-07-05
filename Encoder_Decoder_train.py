@@ -1,14 +1,14 @@
 import sys,os
-sys.path.append('..')
+
 #--------------------------------------#
 
 #   命令行参数设置
 
 #--------------------------------------#
 import argparse
-from global_utils.log_utils import boolean_string, timestamp
+from global_utils.log_utils import  timestamp
 from global_utils.mailsend import EmailSender
-
+from global_utils.utils import boolean_string
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=100, help="random_seed")
@@ -21,12 +21,13 @@ parser.add_argument('--use_log', type=boolean_string, default=True, help='whethe
 parser.add_argument('--load_model', type=boolean_string, default=False, help='whether read the model')
 parser.add_argument('--load_epoch', type=int, default=20, help='the epoch to be read')
 parser.add_argument('--augment', type=str, default='none', help='')
-parser.add_argument('--snr', type=float, default=0, help='')
+parser.add_argument('--snr', type=float, default=-2, help='')
 parser.add_argument('--noise_type', type=str, default='em', help='')
 
 
-parser.add_argument('--qkv_proj', type=str, default='linear', help='qkv projection type')
+parser.add_argument('--qkv_proj', type=str, default='conv', help='qkv projection type')
 parser.add_argument('--ffn_type', type=str, default='leff', help='feed forward network type')
+parser.add_argument("--skip_ct", type=boolean_string, default=True, help="whether use skip connection")
 # from torch.utils.tensorboard import SummaryWriter
 
 use_arg = True 
@@ -55,7 +56,7 @@ else:
     use_log = True
     load_model = False 
     load_epoch = -1
-    snr = 0 
+    snr = -2
     noise_type = 'em'
     
     qkv_proj = 'linear'
@@ -67,7 +68,7 @@ else:
 #   日志设置
 
 #--------------------------------------#
-from global_utils.log_utils import get_time_str,mkdir,Logger
+from global_utils.log_utils import get_time_str,mkdir,Logger, easymail
 
 mkdir('./log')
 if use_log:
@@ -344,7 +345,4 @@ print("-------------training complete!---------------")
 
 print("-------------!---------------")
 logger.close()
-es = EmailSender()
-es.get_attachment(log_path)
-es.get_text('training complete!')
-es.send()
+easymail(log_path)

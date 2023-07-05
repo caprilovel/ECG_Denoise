@@ -6,8 +6,10 @@ sys.path.append('..')
 
 #--------------------------------------#
 import argparse
-from global_utils.log_utils import boolean_string, timestamp
-from global_utils.mailsend import EmailSender
+from global_utils.utils import boolean_string
+from global_utils.log_utils import timestamp
+from global_utils.log_utils import easymail
+
 
 
 parser = argparse.ArgumentParser()
@@ -21,12 +23,13 @@ parser.add_argument('--use_log', type=boolean_string, default=True, help='whethe
 parser.add_argument('--load_model', type=boolean_string, default=False, help='whether read the model')
 parser.add_argument('--load_epoch', type=int, default=20, help='the epoch to be read')
 parser.add_argument('--augment', type=str, default='none', help='')
-parser.add_argument('--snr', type=float, default=0, help='')
+parser.add_argument('--snr', type=float, default=-2, help='')
 parser.add_argument('--noise_type', type=str, default='em', help='')
 parser.add_argument('--use_smooth_loss', type=boolean_string, default=True, help='')
 
 parser.add_argument('--qkv_proj', type=str, default='linear', help='qkv projection type')
 parser.add_argument('--ffn_type', type=str, default='leff', help='feed forward network type')
+parser.add_argument('--skip_connect', type=boolean_string, default=True, help='whether use skip connection')
 # from torch.utils.tensorboard import SummaryWriter
 
 use_arg = True 
@@ -45,6 +48,7 @@ if use_arg:
     qkv_proj = (args.qkv_proj).lower()
     ffn_type = (args.ffn_type).lower()
     use_smooth_loss = args.use_smooth_loss
+    skip_connect = args.skip_connect
     
 else:
     seed = 100
@@ -171,7 +175,7 @@ from model.model_transformer import Transformer
 # 设置模型保存参数规格
 init_epoch = 0
 
-model = Transformer(token_projection=qkv_proj, token_mlp=ffn_type)
+model = Transformer(token_projection=qkv_proj, token_mlp=ffn_type, skip_connect=skip_connect)
 optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-3)
 mkdir('./model_data/')
 print()
@@ -319,10 +323,10 @@ def train(epochs, model, batch_size=batch_size, use_gpu=True):
 train(100, model)
 
 from local_utils.local_utils import torch_calcu_snr
-def test():
+def test(snr):
     epoch_loss_list = []
     snr_loss_list = []
-            
+
     for inputs, labels in batch_norm_snr_iter(DS_test, batch_size, snr=snr, noise_type=noise_type):
         if use_gpu:
             inputs, labels = inputs.cuda(), labels.cuda()
@@ -335,6 +339,7 @@ def test():
     
     epoch_loss = sum(epoch_loss_list) / len(epoch_loss_list)
     snr_mean = sum(snr_loss_list) / len(snr_loss_list)
+    print(f"epoch_loss:{epoch_loss}, snr_mean:{snr_mean}")
     
 
 #--------------------------------------#
@@ -345,11 +350,8 @@ def test():
 
 print("-------------training complete!---------------")
 
-
+test(snr=snr)
 
 print("-------------!---------------")
 logger.close()
-es = EmailSender()
-es.get_attachment(log_path)
-es.get_text('training complete!')
-es.send()
+easymail(log_path)
