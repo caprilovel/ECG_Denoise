@@ -401,16 +401,18 @@ class TransformerBlock(nn.Module):
         
     def forward(self, x, mask=None):
         B, L, C = x.shape
-        
         x = self.abs_pos_enc(x * math.sqrt(self.dim)) 
         x = self.norm1(x)
         msa_in = x
-        
         attn = self.attn(msa_in)
         ffn_in = attn + x 
         
+        ffn_in = self.norm2(ffn_in)
+        ffn_out = self.mlp(ffn_in)
         
-        return ffn_in
+        return ffn_in + ffn_out
+    
+
 ######################Conv Layer#########################
 class DownSample(nn.Module):
     def __init__(self, in_channels, out_channels):
