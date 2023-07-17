@@ -11,6 +11,23 @@ noise_path = "../data/mit-bih-noise-stress-test-database-1.0.0/"
 arryth_path = "../data/mit-bih-arrhythmia-database-1.0.0/"
 
 def Gnoisegen(x, y, snr):
+    '''
+    Generates a noisy signal based on the snr
+    
+    Args:
+        x: numpy.array. Clean signal. 
+        y: numpy.array. Noise signal which would be add to the clean signal.
+        snr: float. Signal noise ratio.
+        
+    Examples:
+        >>> x = np.array([1, 2, 3, 4, 5])
+        >>> y = np.random.randn(5)
+        >>> snr = 10
+        >>> z = Gnoisegen(x, y, snr)
+        >>> z
+
+        
+    '''
     x_temp = x.flatten()
     
     Nx = len(x)  # 求出信号的长度
@@ -630,3 +647,15 @@ def second_order_difference_loss(a, dim=0):
     b = torch.pow(b, 2)
 
     return torch.mean(b) 
+
+#todo: fix up the class 
+from torch.utils.data import Dataset
+class VectorMaskDataset(Dataset):
+    def __init__(self) -> None:
+        super().__init__()
+        
+    def __getitem__(self, index):
+        return super().__getitem__(index)
+    
+    def __len__(self):
+        return super().__len__()

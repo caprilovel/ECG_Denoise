@@ -57,7 +57,6 @@ class Normalizer(object):
         if self.norm_type == " standardization":
             if self.mean is None:
                 self.mean = reduce(df, "... l -> ... 1", 'mean')
-                self.std = 
             return (df - self.mean) / (self.std + self.eps)
         
 class ClassifyDataset(Dataset):
@@ -85,3 +84,4 @@ class ClassifyDataset(Dataset):
     
     def __len__(self):
         return len(self.IDs)
+    
