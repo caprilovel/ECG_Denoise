@@ -6,10 +6,7 @@ sys.path.append('..')
 
 #--------------------------------------#
 import argparse
-from global_utils.utils import boolean_string
-from global_utils.log_utils import timestamp
-from global_utils.log_utils import easymail
-
+from global_utils.torch_utils.log_utils import boolean_string, timestamp, easymail
 
 
 parser = argparse.ArgumentParser()
@@ -72,7 +69,7 @@ else:
 #   日志设置
 
 #--------------------------------------#
-from global_utils.log_utils import get_time_str,mkdir,Logger
+from global_utils.torch_utils.log_utils import get_time_str,mkdir,Logger
 
 mkdir('./log')
 if use_log:
@@ -92,7 +89,7 @@ for arg in vars(args):
 #   显卡设置
 
 #--------------------------------------#
-from global_utils.find_gpus import find_gpus
+from global_utils.torch_utils.cuda import find_gpus
 
 print("-------------GPUs Distribution---------------")
 os.environ['CUDA_VISIBLE_DEVICES'] = find_gpus()
@@ -109,7 +106,7 @@ import torch.nn.functional as F
 import numpy as np
 import pandas as pd
 from datetime import datetime
-from global_utils.utils import get_time_str,mkdir,Logger,boolean_string
+from global_utils.torch_utils.torch_utils import get_time_str,mkdir,Logger,boolean_string
 import time 
 import wfdb
 import sklearn
@@ -135,7 +132,7 @@ model_search_path = './model_data/model*'
 #   随机种子设置
 
 #--------------------------------------#
-from global_utils.utils import random_seed
+from global_utils.torch_utils.torch_utils import random_seed
 
 random_seed(seed)
 print("\n\n\n-------------Random Seed---------------\n")

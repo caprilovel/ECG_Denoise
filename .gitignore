@@ -1,6 +1,7 @@
 *.pth
 *.ipynb
 *.log
+*.png
 
 .ipynb_checkpoints/
 __pycache__/

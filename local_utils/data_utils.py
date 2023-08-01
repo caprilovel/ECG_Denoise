@@ -85,3 +85,37 @@ class ClassifyDataset(Dataset):
     def __len__(self):
         return len(self.IDs)
     
+class Ecg_Dataset(Dataset):
+    """ECG dataset for denoising
+
+    """
+    def __init__(self, noise_name='bw', noise_intensity=0, path=None) -> None:
+        super().__init__()
+        data = []
+        noise_index = ['m4', 'm2', '0', 'p2', 'p4']
+        true_noise = [-4, -2, 0, 2, 4]
+        if type(noise_name) == str:
+            noise_name = [noise_name]
+        if type(noise_intensity) == int:
+            assert noise_intensity in true_noise, "noise intensity should be in [-4, -2, 0, 2, 4]"
+        if path == None:
+            if os.path.exists("./data/dict_data/"):
+                path = "./data/dict_data/"
+            elif os.path.exists("../data/dict_data/"):
+                path = "../data/dict_data/"
+        data_path = os.path.join(path, noise_index[true_noise.index(noise_intensity)])
+        for n_name in noise_name:
+            data.append(np.load(os.path.join(data_path, n_name + '.npy')))
+            
+        self.data = np.concatenate(data, axis=0)
+        self.ground_data = np.load(os.path.join(path, 'ecg.npy'))
+    
+    def __len__(self):
+        return self.data.shape[0]
+    
+    def __getitem__(self, index):
+        return self.data[index], self.ground_data[index]
+
+if __name__ == "__main__":
+    dataset = Ecg_Dataset(noise_name=['bw', 'em'])
+    print(dataset.data.shape)
