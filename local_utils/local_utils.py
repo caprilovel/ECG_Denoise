@@ -641,21 +641,24 @@ def find_model(model_path, model_name, epoch=None):
     idx = epochs.index(max(epochs))
     return model_dirs[idxs[idx]]
     
-def second_order_difference_loss(a, dim=0):
-    a = a.transpose(0, dim)
+def second_order_difference_loss(a):
+    """smooth loss
+
+    Args:
+        a (tensor): reconstructed signal
+        dim (int, optional): . Defaults to 0.
+
+    Returns:
+        _type_: _description_
+    """
+    a = rearrange(a, 'b c l -> l b c')
     b = a[0:-2] + a[2:] - 2 * a[1:-1]
     b = torch.pow(b, 2)
+    b = rearrange(b, 'l b c -> b (c l)')
+    b = torch.mean(b, dim=1)
+    return b
 
-    return torch.mean(b) 
-
-#todo: fix up the class 
-from torch.utils.data import Dataset
-class VectorMaskDataset(Dataset):
-    def __init__(self) -> None:
-        super().__init__()
-        
-    def __getitem__(self, index):
-        return super().__getitem__(index)
+if __name__ == "__main__":
+    a = torch.randn(2, 2, 10)
     
-    def __len__(self):
-        return super().__len__()
+    print(second_order_difference_loss(a).shape)

@@ -1,7 +1,8 @@
-from typing import Optional, Callable, List, Any
+from typing import Iterator, Optional, Callable, List, Any
 
 import numpy as np
 import torch
+from torch.nn.parameter import Parameter
 import torchvision.ops
 from einops import rearrange
 from torch import nn
@@ -297,12 +298,15 @@ class MSAttention(nn.Module):
         q, k, v = self.qkv_proj(x, attn_kv)
         q = q * self.scale 
         attn = (q @ k.transpose(-2, -1))
-        
+        # print(attn.shape)
         if mask is not None:
-            # nW = mask.shape[0]
-            # mask = repeat(mask, 'nW m n -> nW m (n d)', d =ratio)
-            pass 
+            if len(mask.shape) != len(attn.shape):
+                mask = mask.unqueeze(0)
+            # print(attn.shape, mask.shape)
+            attn = attn + mask 
+            attn = self.softmax(attn)
         else:
+            # print(attn.shape)
             attn = self.softmax(attn)
     
         attn =self.attn_drop(attn)
@@ -485,82 +489,83 @@ class BasicLayer(nn.Module):
         if self.downsample is not None:
             self.downsample = downsample(dim=dim, norm_layer=norm_layer)
             
-    def forward(self, x):
-        B, C, L = x.shape
-        x = rearrange(x, 'b c l -> b l c')
+    def forward(self, x, mask=None):
+        B, L, C = x.shape
+        # x = rearrange(x, 'b c l -> b l c')
         # add mask here
-        for blk in self.blocks:
-            x = blk(x)
+        if mask is None:
+            for blk in self.blocks:
+                x = blk(x)
+        else:
+            for blk in self.blocks:
+                x = blk(x, mask)
             
         if self.downsample is not None:
             x = self.downsample(x)
-        x = rearrange(x, 'b l c -> b c l')
+        # x = rearrange(x, 'b l c -> b c l')
         return x 
         
-        
-class Transformer1d(nn.Module):
-    def __init__(
-        self, num_class=9, in_channels=32, embed_dim=128, depths=[2, 2, 6, 2], num_heads=[4, 8, 16, 32], mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0., drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, local_enhence=False, abs_emd=True, downsample=None, use_checkpoint=False
-     ) -> None:
+class RelativePositionEmbedding(nn.Module):
+    def __init__(self, Length, whole_length, num_heads) -> None:
         super().__init__()
+        self.Length = Length
+        self.whole_length = whole_length
         
-        self.num_layers = len(depths)
-        self.embed_dim = embed_dim
+        self.relative_position_bias_table = nn.Parameter(
+            torch.zeros((2 * Length - 1), num_heads))
         
-        self.embed = nn.Conv1d(in_channels, embed_dim, kernel_size=1)
-        dpr = [x.item() for x in torch.linspace(0, drop_path, sum(depths))]
+        coords_l = torch.arange(Length)
+        coords = torch.stack(torch.meshgrid([coords_l], indexing='ij'))
+        coords_flatten = torch.flatten(coords, 1)
+        relative_coords = coords_flatten[:, :, None] - \
+            coords_flatten[:, None, :]  # 1, Wl, Wl
+        relative_coords = relative_coords.permute(
+            1, 2, 0).contiguous()  # Wl, Wl, 2
+        relative_coords[:, :, 0] += Length - \
+            1  # shift to start from 0
+        # relative_coords[:, :, 0] *= 2 * self.window_size[1] - 1
+        relative_position_index = relative_coords.sum(-1)  # Wl, Wl
+        self.register_buffer("relative_position_index",
+                             relative_position_index)
+    def parameters_normalize(self, ):
+        self.relative_position_bias_table.data = torch.randn_like(self.relative_position_bias_table.data) * 0.02
+    
         
-        self.layers = nn.ModuleList()
-        for i_layer in range(self.num_layers):
-            layer = BasicLayer(
-                dim=int(embed_dim * 2 ** i_layer),
-                depth=depths[i_layer],
-                num_heads=num_heads[i_layer],
-                mlp_ratio=mlp_ratio,
-                qkv_bias=qkv_bias,
-                drop=drop,
-                attn_drop=attn_drop,
-                drop_path=dpr[sum(depths[:i_layer]):sum(depths[:i_layer + 1])],
-                act_layer=act_layer,
-                norm_layer=norm_layer,
-                local_enhence=local_enhence,
-                abs_emd=abs_emd,
-                downsample=PatchMerging if (i_layer < self.num_layers - 1) else None,
-                use_checkpoint=use_checkpoint
-            )
-            self.layers.append(layer)
-            
-        self.num_features = int(embed_dim * 2 ** (self.num_layers - 1))
-        self.norm = norm_layer(self.num_features)
-        
-        
-        self.classifier = nn.Sequential(
-            nn.AdaptiveAvgPool1d(1),
-            nn.Flatten(),
-            nn.Linear(self.num_features, num_class)
-        )
-        
-    def forward(self, x):
-        x = self.embed(x)
-        for layer in self.layers:
-            x = layer(x)
-        x = rearrange(x, 'b c l -> b l c')
-        x = self.norm(x)
-        x = rearrange(x, 'b l c -> b c l')
-        
-        x = self.classifier(x)
-        return x
+    def forward(self, R_pos=None):
+        relative_position_bias = self.relative_position_bias_table[
+            self.relative_position_index.view(-1)].view(
+                self.Length, self.Length, -1)  # Wl, Wl, nH
+        relative_position_bias = relative_position_bias.permute(2, 0, 1).contiguous()  # nH, Wl, Wl
+        attn_length = self.whole_length
+        if R_pos is None:
+            relative_position_bias = mask_fill(relative_position_bias, (attn_length-self.Length)//2, attn_length)
+        else:
+            relative_position_bias = mask_fill(relative_position_bias, R_pos-self.Length//2, attn_length)
+    
+        return relative_position_bias.unsqueeze(0)    
 
+def mask_fill(mask, init_len, length):
+    """_summary_
 
+    Args:
+        mask (_type_): _description_
+        length (_type_): _description_
+    """
+    num_head, window_size, _ = mask.shape
+    assert mask.shape[1] == mask.shape[2]
+    pad_total = length - window_size 
+    
+    return F.pad(mask, (init_len, pad_total-init_len, init_len, pad_total-init_len), value=0)
 
 class ralenet(nn.Module):
     def __init__(
-        self, qkv_bias=True, qk_scale=None, attn_drop=0., proj_drop=0., mlp_ratio=4., act_layer=nn.GELU, norm_layer=nn.LayerNorm, local_enhence=False, use_partial=True, use_eca=False, pe='abs', use_checkpoint=False
+        self, qkv_bias=True, qk_scale=None, attn_drop=0., proj_drop=0., mlp_ratio=4., act_layer=nn.GELU, norm_layer=nn.LayerNorm,  use_partial=True, use_eca=False, pe='abs', use_checkpoint=False, low_level_enhence=True, high_level_enhence=True
         ) -> None:
         super().__init__()        
         
         channels = [2**(i+3) for i in range(5)]
         heads = [2**(i+1) for i in range(5)]
+        length = [2**(-i+8) for i in range(5)]
 
         self.conv1 = nn.Sequential( 
             nn.Conv1d(2, channels[0], kernel_size=3, padding=1),
@@ -568,63 +573,43 @@ class ralenet(nn.Module):
             nn.BatchNorm1d(channels[0]),
         )
         
-        self.dtransformer1 = nn.Sequential(
-            TransformerBlock(channels[0], num_heads=heads[0]),
-            TransformerBlock(channels[0], num_heads=heads[0])   
-        )
+        self.rwattn1 = RelativePositionEmbedding(32, length[0], heads[0])
+        self.rwattn2 = RelativePositionEmbedding(16, length[1], heads[1])
+        self.rwattn3 = RelativePositionEmbedding(8, length[2], heads[2])
+        self.rwattn4 = RelativePositionEmbedding(4, length[3], heads[3])
         
+        
+        self.dtransformer1 = BasicLayer(channels[0], depth=2, num_heads=heads[0], local_enhence=high_level_enhence, ) 
+
         self.pm1 = PatchMerging(channels[0], norm_layer=norm_layer)
         
-        self.dtransformer2 = nn.Sequential(
-            TransformerBlock(channels[1], num_heads=heads[1]),
-            TransformerBlock(channels[1], num_heads=heads[1])
-        )
+        self.dtransformer2 = BasicLayer(channels[1], depth=2, num_heads=heads[1], local_enhence=high_level_enhence, ) 
+        
         self.pm2 = PatchMerging(channels[1], norm_layer=norm_layer)
         
-        self.dtransformer3 = nn.Sequential(
-            TransformerBlock(channels[2], num_heads=heads[2]),
-            TransformerBlock(channels[2], num_heads=heads[2])
-        )
+        self.dtransformer3 = BasicLayer(channels[2], depth=2, num_heads=heads[2], local_enhence=high_level_enhence, )
         
         self.pm3 = PatchMerging(channels[2], norm_layer=norm_layer)
         
-        self.dtransformer34 = nn.Sequential(
-            TransformerBlock(channels[3], num_heads=heads[3]),
-            TransformerBlock(channels[3], num_heads=heads[3])
-        )
+        self.dtransformer34 = BasicLayer(channels[3], depth=2, num_heads=heads[3], local_enhence=high_level_enhence, )
         
         self.pm4 = PatchMerging(channels[3], norm_layer=norm_layer)
         
-        self.transformer = nn.Sequential(
-            TransformerBlock(channels[4], num_heads=heads[4]),
-            TransformerBlock(channels[4], num_heads=heads[4])
-        )
+        self.transformer = BasicLayer(channels[4], depth=2, num_heads=heads[4], local_enhence=high_level_enhence, ) 
         
-        self.utransformer4 = nn.Sequential(
-            TransformerBlock(channels[4], num_heads=heads[4]),
-            TransformerBlock(channels[4], num_heads=heads[4])
-        )
+        self.utransformer4 = BasicLayer(channels[4], depth=2, num_heads=heads[4], local_enhence=high_level_enhence, )
         
         self.ps4 = PatchSeparate(channels[4], norm_layer=norm_layer)
         
-        self.utranformer3 = nn.Sequential(
-            TransformerBlock(channels[3], num_heads=heads[3]),
-            TransformerBlock(channels[3], num_heads=heads[3])
-        )
+        self.utranformer3 = BasicLayer(channels[3], depth=2, num_heads=heads[3], local_enhence=high_level_enhence, )
         
         self.ps3 = PatchSeparate(channels[3], norm_layer=norm_layer)
         
-        self.utransformer2 = nn.Sequential(
-            TransformerBlock(channels[2], num_heads=heads[2]),
-            TransformerBlock(channels[2], num_heads=heads[2])
-        )
+        self.utransformer2 = BasicLayer(channels[2], depth=2, num_heads=heads[2], local_enhence=high_level_enhence, )
         
         self.ps2 = PatchSeparate(channels[2], norm_layer=norm_layer)
         
-        self.utransformer1 = nn.Sequential(
-            TransformerBlock(channels[1], num_heads=heads[1]),
-            TransformerBlock(channels[1], num_heads=heads[1])
-        )
+        self.utransformer1 = BasicLayer(channels[1], depth=2, num_heads=heads[1], local_enhence=high_level_enhence, )
         
         self.ps1 = PatchSeparate(channels[1], norm_layer=norm_layer)
         
@@ -637,37 +622,42 @@ class ralenet(nn.Module):
         B, C, L = x.shape
         x = self.conv1(x)
         
+        attn1 = self.rwattn1()
+        attn2 = self.rwattn2()
+        attn3 = self.rwattn3()
+        attn4 = self.rwattn4()
+                
         x1 = rearrange(x, 'b c l -> b l c')
         
-        x1 = self.dtransformer1(x1)
+        x1 = self.dtransformer1(x1, attn1)
         x1 = self.pm1(x1)
         
-        x2 = self.dtransformer2(x1)
+        x2 = self.dtransformer2(x1, attn2)
         x2 = self.pm2(x2)
         
-        x3 = self.dtransformer3(x2)
+        x3 = self.dtransformer3(x2, attn3)
         x3 = self.pm3(x3)
         
-        x4 = self.dtransformer34(x3)
+        x4 = self.dtransformer34(x3, attn4)
         x4 = self.pm4(x4)
-        
+
         x_mid = self.transformer(x4)
-        
+
         x_mid += x4
         
         x_4 = self.utransformer4(x_mid)
         x_4 = self.ps4(x_4)
         x_4 = x_4 + x3
         
-        x_3 = self.utranformer3(x_4)
+        x_3 = self.utranformer3(x_4, attn4)
         x_3 = self.ps3(x_3)
         x_3 = x_3 + x2
         
-        x_2 = self.utransformer2(x_3)
+        x_2 = self.utransformer2(x_3, attn3)
         x_2 = self.ps2(x_2)
         x_2 = x_2 + x1
         
-        x_1 = self.utransformer1(x_2)
+        x_1 = self.utransformer1(x_2, attn2)
         x_1 = self.ps1(x_1)
         x_1 = x_1
         
@@ -680,7 +670,6 @@ class ralenet(nn.Module):
 
 
 
-
 if __name__ == "__main__":
 
     x = torch.rand(16,  2, 256)
@@ -688,8 +677,12 @@ if __name__ == "__main__":
     relanet = ralenet()
     relanet = relanet.cuda()
     print(relanet(x).shape)
-    
+
     # from torchsummary import summary
     # summary(tsb, (4, 200))
     # summary(tsb, (20, 32))
-    
+    # a = torch.zeros(1, 2, 8, 8)
+    # print(re(8))
+
+
+

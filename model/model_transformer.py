@@ -552,3 +552,9 @@ class Transformer(nn.Module):
             y_proj = self.outproj(y4)
         
         return y_proj
+    
+if __name__ == "__main__":
+    x = torch.randn(2, 2, 256)
+    model = Transformer()
+    y = model(x)
+    print(y.shape)

@@ -350,3 +350,7 @@ class Seq2Seq2(nn.Module):
 
 
     
+if __name__ == "__main__":
+    a = torch.randn(10, 2, 256)
+    s2s = Seq2Seq2()
+    print(s2s(a).shape)
