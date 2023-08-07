@@ -1,7 +1,3 @@
-from global_utils.torch_utils.cuda import find_gpus
-import os, sys
-os.environ['CUDA_VISIBLE_DEVICES'] = find_gpus()
-
 
 import torch
 import torch.nn as nn
@@ -53,43 +49,27 @@ test_ratio = 0.2
 train_size = int(train_ratio * len(select_dataset))
 test_size = len(select_dataset) - train_size
 train_dataset, test_dataset = random_split(select_dataset, [train_size, test_size])
+
 train_loader = DataLoader(train_dataset, batch_size, shuffle=True, collate_fn=custom_collate_fn)
 test_loader = DataLoader(test_dataset, batch_size, shuffle=True, collate_fn=custom_collate_fn)
-
-from denoise_train import train 
-if args_dict['model_index'] == 0:
-    from model.UNet import UNet
-    model = UNet()
-    model_name = 'unet'
-if args_dict['model_index'] == 1:
-    from model.DAM import Seq2Seq2
-    model = Seq2Seq2()
-    model_name = 'DANet'
-if args_dict['model_index'] == 2:
-    from model.raletransformer import ralenet
-    model = ralenet()
-    model_name = 'ralenet'    
-
-if args_dict['model_index'] == 3:
-    from model.transformer import ralenet
-    model = ralenet()
-    model_name = 'testmodel'
+from local_utils.evaluate import RMSE, SNR
+from local_utils.denoisefunc import wavelet_denoise
+rmse_array = []
+snr_array = []
+for _, (inputs, targets) in enumerate(train_loader):
+    # print(inputs.shape)
+    # print(targets.shape)
+    input_np = inputs.numpy()
+    # target_np = targets.numpy()
+    out = wavelet_denoise(input_np)
+    out = torch.FloatTensor(out)
+    # print(RMSE(out, targets), SNR(out, targets))
+    rmse_array.append(RMSE(out, targets))
+    snr_array.append(SNR(out, targets))
     
-if args_dict['model_index'] == 4:
-    from model.transformer import ralenet
-    model = ralenet(low_level_enhence=False)
-    model_name = 'modelmlp'
-
-
-
-epochs = args_dict['epochs']
-batch_size = args_dict['batch_size']
-train(epochs=epochs, batch_size=batch_size, model=model, train_loader=train_loader, test_loader=test_loader, model_name=model_name, use_gpu=True, noise_name=noise_name, noise_intensity=noise_intensity,)
-
-# if __name__ == "__main__":
-#     x = torch.randn(32, 2, 256)
-#     for _, (x, y) in enumerate(train_loader):
-#         print(x.shape)
-#         z = model(x)
-#         print(z.shape)
-
+rmse_array = torch.concat(rmse_array, dim=0)
+snr_array = torch.concat(snr_array, dim=0)
+print("noise_name:", noise_name, "noise_intensity:", noise_intensity)
+print("rmse:",rmse_array.mean(),"snr:", snr_array.mean())
+with open("dwt_dn_result.txt", "a") as f:
+    f.write("noise_name:"+noise_name+"noise_intensity:"+str(noise_intensity)+"rmse:"+str(rmse_array.mean())+"snr:"+str(snr_array.mean())+"\n")

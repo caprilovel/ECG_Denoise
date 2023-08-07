@@ -16,6 +16,13 @@ def RMSE(y, y_pred):
     
     Returns:
         RMSE (tensor): RMSE value, Batch
+        
+    Examples:
+        >>> a = torch.randn(2, 3, 4)
+        >>> b = torch.randn(2, 3, 4)
+        >>> c = RMSE(a, b)
+        >>> c.shape
+        (2,)
     """
     y = y.flatten(start_dim=1)
     y_pred = y_pred.flatten(start_dim=1)
@@ -30,6 +37,14 @@ def SNR(y, y_pred):
         
     Returns:
         SNR (tensor): SNR value, Batch
+    
+    Examples:
+        >>> a = torch.randn(2, 3, 4)
+        >>> b = torch.randn(2, 3, 4)
+        >>> c = RMSE(a, b)
+        >>> c.shape
+        (2,)
+        
     """
     y = y.flatten(start_dim=1)
     y_pred = y_pred.flatten(start_dim=1)

@@ -88,8 +88,8 @@ def train(epochs, model, batch_size, train_loader, test_loader, use_gpu,model_pa
         test_rmse_list.append(test_rmse.mean().item())
         if (epoch + 1) % 10 == 0:
             from global_utils.torch_utils.log_utils import mkdir
-            mkdir("model_save")
-            torch.save(model.state_dict(), f"model_save/{model.__class__.__name__}_{epoch}.pth")
+            mkdir(f"./model_save/{model.__class__.__name__}")
+            torch.save(model.state_dict(), f"model_save/{model.__class__.__name__}/{model.__class__.__name__}_{epoch}_{kwargs['noise_name']}_intensity{kwargs['noise_intensity']}.pth")
             print(f"model_save/{model.__class__.__name__}_{epoch}_{kwargs['noise_name']}_intensity{kwargs['noise_intensity']}.pth")
             print("epoch:", epoch + 1)
             print("train snr:", train_snr.mean().item())

@@ -132,7 +132,7 @@ class Mlp(nn.Module):
         hidden_features = hidden_features or in_features
         self.local_enhence = local_enhence
         self.use_partial = use_partial
-        
+        print(local_enhence)
         self.eca = eca_layer_1d(out_features) if use_eca else nn.Identity()
         
         self.fc1 = nn.Linear(in_features, hidden_features)
@@ -559,7 +559,7 @@ def mask_fill(mask, init_len, length):
 
 class ralenet(nn.Module):
     def __init__(
-        self, qkv_bias=True, qk_scale=None, attn_drop=0., proj_drop=0., mlp_ratio=4., act_layer=nn.GELU, norm_layer=nn.LayerNorm,  use_partial=True, use_eca=False, pe='abs', use_checkpoint=False, low_level_enhence=True, high_level_enhence=True
+        self, qkv_bias=True, qk_scale=None, attn_drop=0., proj_drop=0., mlp_ratio=4., act_layer=nn.GELU, norm_layer=nn.LayerNorm,  use_partial=True, use_eca=False, pe='abs', use_checkpoint=False, low_level_enhence=True, high_level_enhence=False
         ) -> None:
         super().__init__()        
         

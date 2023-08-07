@@ -10,6 +10,79 @@ import math
 noise_path = "../data/mit-bih-noise-stress-test-database-1.0.0/"
 arryth_path = "../data/mit-bih-arrhythmia-database-1.0.0/"
 
+
+
+
+path = "../data/mit-bih-noise-stress-test-database-1.0.0/"
+
+
+def ecg_noise_add(data, alpha=0.1, random_seed=500):
+    random.seed(random_seed)
+    datashape = data.shape
+    noise_index = ['bw', 'ma', 'em']
+    length = data.shape[-2]
+    if len(data.shape) is 2:
+        data = np.expand_dims(data, 0)
+    noise_list = []
+    for i in range(data.shape[0]):
+        group_index = random.randint(0, len(noise_index) - 1)
+        data_index = random.randint(0, 650000 - int(data.shape[-2]) - 1)
+        noise_list.append(
+            alpha *
+            wfdb.rdrecord(path + noise_index[group_index],
+                          physical=False).d_signal[data_index:data_index +
+                                                   int(data.shape[-2])])
+    output = data + np.stack(noise_list, 0)
+    if output.shape != datashape:
+        output = np.squeeze(output, 0)
+    return output
+
+
+data_path = "../data/mit-bih-arrhythmia-database-1.0.0/"
+
+noise_path = "../data/mit-bih-noise-stress-test-database-1.0.0/"
+arryth_path = "../data/mit-bih-arrhythmia-database-1.0.0/"
+
+
+def batch_data_iter(num, db, batch_size):
+    signal = wfdb.rdrecord(noise_path + '118e24', physical=False).d_signal
+    true_sig = wfdb.rdrecord(noise_path + num + 'e00', physical=False).d_signal
+    flag = 0
+    data_sig = []
+    data_true = []
+    for i in range(0, 650000, 256):
+        if flag < batch_size:
+            data_sig.append(torch.FloatTensor(signal[i:i + 256, :]))
+            data_true.append(torch.FloatTensor(true_sig[i:i + 256, :]))
+            flag += 1
+        else:
+            yield torch.transpose(torch.stack(data_sig, dim=0), 1,
+                                  2).contiguous(), torch.transpose(
+                                      torch.stack(data_true, dim=0), 1,
+                                      2).contiguous()
+            data_sig = []
+            data_true = []
+            flag = 0
+
+
+def batch_arrythdata_iter(nums, batch_size):
+    for num in nums:
+        signal = wfdb.rdrecord(arryth_path + str(num), physical=False).d_signal
+        flag = 0
+        data_sig = []
+        for i in range(0, 650000, 256):
+            if flag < batch_size:
+                data_sig.append(signal[i:i + 256, :])
+                flag += 1
+            else:
+                ground_truth_data = np.stack(data_sig, 0)
+                yield torch.transpose(
+                    torch.FloatTensor(ecg_noise_add(ground_truth_data)), 1,
+                    2).contiguous(), torch.transpose(
+                        torch.FloatTensor(ground_truth_data), 1,
+                        2).contiguous()
+                data_sig = []
+                flag = 0
 def Gnoisegen(x, y, snr):
     '''
     Generates a noisy signal based on the snr

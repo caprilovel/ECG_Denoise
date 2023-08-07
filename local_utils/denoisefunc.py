@@ -5,19 +5,32 @@ import pandas as pds
 
 
 def wavelet_denoise(ecg_data):
+    """using wavelet to denoise the ecg data
+
+    Args:
+        ecg_data (numpy.ndarray): the input ecg data, should be a 2d nparray or 3d nparray. 
+
+    Returns:
+        np.array: the denoised ecg data, have the same shape as the input ecg data.
+    """
     import pywt
     w = pywt.Wavelet('db8')
-    datarec = []
-    for data in ecg_data:
-        
-        maxlev = pywt.dwt_max_level(len(data), w.dec_len)
-        threshold = 0.04
-        coeffs = pywt.wavedec(data, 'db8', level=maxlev)
-        for i in range(1, len(coeffs)):
-            coeffs[i] = pywt.threshold(coeffs[i], threshold*max(coeffs[i]))
-        datarec.append(pywt.waverec(coeffs, 'db8'))
-    return np.array(datarec)
-
+    if len(ecg_data.shape) == 2:
+        datarec = []
+        for data in ecg_data:
+            
+            maxlev = pywt.dwt_max_level(len(data), w.dec_len)
+            threshold = 0.04
+            coeffs = pywt.wavedec(data, 'db8', level=maxlev)
+            for i in range(1, len(coeffs)):
+                coeffs[i] = pywt.threshold(coeffs[i], threshold*max(coeffs[i]))
+            datarec.append(pywt.waverec(coeffs, 'db8'))
+        return np.array(datarec)
+    elif len(ecg_data.shape) == 3:
+        datarec = []
+        for data in ecg_data:
+            datarec.append(wavelet_denoise(data))
+        return np.array(datarec)
 
 
 def fft_denoise(ecg_datas, alpha=1):
