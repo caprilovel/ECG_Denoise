@@ -115,7 +115,7 @@ class eca_layer_1d(nn.Module):
         
 
 class Mlp(nn.Module):
-    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0., local_enhence=False, use_partial=True, use_eca=False):
+    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0., local_enhence=True, use_partial=True, use_eca=False):
         """Feed Forward Layer 
 
         Args:
@@ -337,7 +337,7 @@ class TransformerBlock(nn.Module):
         use_checkpoint (bool, optional): whether to use checkpoint. Defaults to False.
     """
     def __init__(self, dim, num_heads,  
-                 mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0., drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, local_enhence=False, use_partial=True, use_eca=False, pe='abs', use_checkpoint=False, *args, **kwargs) -> None:
+                 mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0., drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, local_enhence=True, use_partial=True, use_eca=False, pe='abs', use_checkpoint=False, *args, **kwargs) -> None:
         """Transformer Block
 
         Args:
@@ -457,7 +457,7 @@ class PatchMerging(nn.Module):
 
 class BasicLayer(nn.Module):
     def __init__(self, dim, depth, num_heads,  
-                 mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0., drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, local_enhence=False, abs_emd=True, downsample=None, upsample=None, use_checkpoint=False) -> None:
+                 mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0., drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, local_enhence=True, abs_emd=True, downsample=None, upsample=None, use_checkpoint=False) -> None:
         super().__init__()
         self.depth = depth
         self.use_checkpoint = use_checkpoint

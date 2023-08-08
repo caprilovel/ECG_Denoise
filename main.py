@@ -72,7 +72,7 @@ if args_dict['model_index'] == 2:
 
 if args_dict['model_index'] == 3:
     from model.transformer import ralenet
-    model = ralenet()
+    model = ralenet(high_level_enhence=True)
     model_name = 'testmodel'
     
 if args_dict['model_index'] == 4:

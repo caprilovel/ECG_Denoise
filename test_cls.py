@@ -73,6 +73,21 @@ model = ResNet_cls()
 model.load_state_dict(torch.load('./model/cls_model.pth'))
 model = model.cuda()
 
+from model.UNet import UNet
+denoised_model1 = UNet()
+denoised_model1.load_state_dict(torch.load('./model_save/UNet/UNet_99_emb_intensity-4.pth'))
+denoised_model1 = denoised_model1.cuda()
+
+from model.DAM import Seq2Seq2
+denoised_model2 = Seq2Seq2()
+denoised_model2.load_state_dict(torch.load('./model_save/Seq2Seq2/Seq2Seq2_99_emb_intensity-4.pth'))
+denoised_model2 = denoised_model2.cuda()
+
+from model.transformer import ralenet
+denoised_model3 = ralenet(high_level_enhence=True)
+denoised_model3.load_state_dict(torch.load('./model_save/ralenet/ralenet_99_emb_intensity-4.pth'))
+denoised_model3 = denoised_model3.cuda()
+
 with torch.no_grad():
     pred_array = []
     label_array = []
@@ -100,5 +115,63 @@ with torch.no_grad():
     print('noised test acc: ', acc(pred_array, label_array))
     print('noised test precision: ', precision(pred_array, label_array))
     print('noised test f1 score: ', f1_score(pred_array, label_array))
+    pred_array = []
+    label_array = []
+    for _, (data, label) in enumerate(noised_test_dataloader):
+        data = data.float().cuda()
+        label = label.long().cuda()
+        data = denoised_model1(data)
+        pred = model(data)
+        pred_array.append(pred)
+        label_array.append(label)
+    pred_array = torch.cat(pred_array, dim=0)
+    label_array = torch.cat(label_array, dim=0)
+    print('noised1 test acc: ', acc(pred_array, label_array))
+    print('noised1 test precision: ', precision(pred_array, label_array))
+    print('noised1 test f1 score: ', f1_score(pred_array, label_array))
+    pred_array = []
+    label_array = []
+    for _, (data, label) in enumerate(noised_test_dataloader):
+        data = data.float().cuda()
+        label = label.long().cuda()
+        data = denoised_model2(data)
+        pred = model(data)
+        pred_array.append(pred)
+        label_array.append(label)
+    pred_array = torch.cat(pred_array, dim=0)
+    label_array = torch.cat(label_array, dim=0)
+    print('noised2 test acc: ', acc(pred_array, label_array))
+    print('noised2 test precision: ', precision(pred_array, label_array))
+    print('noised2 test f1 score: ', f1_score(pred_array, label_array))
+    pred_array = []
+    label_array = []
+    for _, (data, label) in enumerate(noised_test_dataloader):
+        data = data.float().cuda()
+        label = label.long().cuda()
+        data = denoised_model3(data)
+        pred = model(data)
+        pred_array.append(pred)
+        label_array.append(label)
+    pred_array = torch.cat(pred_array, dim=0)
+    label_array = torch.cat(label_array, dim=0)
+    print('noised3 test acc: ', acc(pred_array, label_array))
+    print('noised3 test precision: ', precision(pred_array, label_array))
+    print('noised3 test f1 score: ', f1_score(pred_array, label_array))
+    pred_array = []
+    label_array = []
+    for _, (data, label) in enumerate(noised_test_dataloader):
+        data = data.numpy()
+        label = label.long().cuda()
+        from local_utils.denoisefunc import wavelet_denoise
+        data = wavelet_denoise(data)
+        data = torch.FloatTensor(data).cuda()
+        pred = model(data)
+        pred_array.append(pred)
+        label_array.append(label)
+    pred_array = torch.cat(pred_array, dim=0)
+    label_array = torch.cat(label_array, dim=0)
+    print('dwt test acc: ', acc(pred_array, label_array))
+    print('dwt test precision: ', precision(pred_array, label_array))
+    print('dwt test f1 score: ', f1_score(pred_array, label_array))
     
 
