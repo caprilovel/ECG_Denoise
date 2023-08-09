@@ -9,3 +9,4 @@ test/
 log/
 model_data/
 data/*
+!readme_assets/*
