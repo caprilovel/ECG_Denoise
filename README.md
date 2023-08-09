@@ -31,11 +31,21 @@ The python package you may need to be installed.
 
 - [global_utils](https://github.com/caprilovel/global_utils)
 
-The other packages:
+The other packages you can installed with pip:
 
-- 
+- einops
+- matplotlib
+- numpy
+- pandas
+- scikit_learn
+- scipy
+- sktime
+- torch
+- tqdm
+- wfdb
 
 ## Citation
 
 Please cite our work using the following BibTex if you find it's helpful in your reasearch:
 
+This work is not accepted now.
