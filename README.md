@@ -27,7 +27,7 @@ You may need to download the data from these websites.
 
 ## Installation
 
-The python package you may need to be installed.
+The python package you may need to be download and installed.
 
 - [global_utils](https://github.com/caprilovel/global_utils)
 
