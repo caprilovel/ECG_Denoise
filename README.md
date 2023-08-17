@@ -43,6 +43,10 @@ The other packages you can installed with pip:
 - torch
 - tqdm
 - wfdb
+## Todo
+- Restructure the code.
+- Package the code and environment into a docker image.
+
 
 ## Citation
 
