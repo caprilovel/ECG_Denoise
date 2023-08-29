@@ -21,10 +21,11 @@ from torch.utils.data import DataLoader, Dataset, random_split, Subset
 import warnings
 warnings.filterwarnings('ignore')
 
-random_seed(2023)
+random_seed(2023) 
+
 noise_intensities = [-4, -2, 0, 2, 4]
 noise_type = ['bw', 'ma', 'em', 'emb']
-models = ['unet', 'DANet', "ralenet", "testmodel"]
+models = ['unet', 'DANet', "ralenet_nra", "ralenet_mlp", "ralenet"]
 
 args = TorchArgs()
 args.add_argument("--intensity_index", type=int, default=0)
@@ -45,6 +46,8 @@ def custom_collate_fn(batch):
     # 将数据转换为FloatTensor类型
     inputs, targets = zip(*batch)
     return torch.FloatTensor(inputs), torch.FloatTensor(targets)
+
+# since random seed is defined, we can use random.sample to select samples
 total_samples = len(ecg_data)
 select_samples = random.sample(range(total_samples), 10000)
 select_dataset = Subset(ecg_data, select_samples)
@@ -60,26 +63,20 @@ from denoise_train import train
 if args_dict['model_index'] == 0:
     from model.UNet import UNet
     model = UNet()
-    model_name = 'unet'
 if args_dict['model_index'] == 1:
     from model.DAM import Seq2Seq2
     model = Seq2Seq2()
-    model_name = 'DANet'
 if args_dict['model_index'] == 2:
     from model.raletransformer import ralenet
     model = ralenet()
-    model_name = 'ralenet'    
-
 if args_dict['model_index'] == 3:
     from model.transformer import ralenet
-    model = ralenet(high_level_enhence=True)
-    model_name = 'testmodel'
-    
+    model = ralenet(low_level_enhence=False)
 if args_dict['model_index'] == 4:
     from model.transformer import ralenet
-    model = ralenet(low_level_enhence=False)
-    model_name = 'modelmlp'
+    model = ralenet(high_level_enhence=True)
 
+model_name = models[args_dict['model_index']]
 
 
 epochs = args_dict['epochs']

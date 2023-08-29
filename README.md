@@ -52,4 +52,4 @@ The other packages you can installed with pip:
 
 Please cite our work using the following BibTex if you find it's helpful in your reasearch:
 
-This work is not accepted now.
+This work is under review in BIBM 2023now.
