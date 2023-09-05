@@ -15,13 +15,12 @@ model/Enc_Dec.py
 model/RestNet.py
 model/CNN19.py
 
-
-!model_save/cls_model.pth
-
 .ipynb_checkpoints/
 __pycache__/
 test/
 log/
 model_data/
 data/*
+
+!model_save/cls_model.pth
 !readme_assets/*
