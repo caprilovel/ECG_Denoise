@@ -43,7 +43,7 @@ noise_intensity = noise_intensities[args_dict['intensity_index']]
 ecg_data = Ecg_Dataset(noise_name=noise_name, noise_intensity=noise_intensity)
 
 def custom_collate_fn(batch):
-    # 将数据转换为FloatTensor类型
+    # change the data type into FloatTensor
     inputs, targets = zip(*batch)
     return torch.FloatTensor(inputs), torch.FloatTensor(targets)
 

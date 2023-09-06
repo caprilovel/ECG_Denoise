@@ -32,7 +32,7 @@ class DUblock(nn.Module):
         self, in_channels, out_channels, du_type
     ):
         super().__init__()
-        
+        # du_type: D for downsampling, U for upsampling
         self.du_type = du_type
         
         if du_type == 'D':

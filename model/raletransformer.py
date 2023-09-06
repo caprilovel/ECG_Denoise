@@ -163,11 +163,14 @@ class Mlp(nn.Module):
 
 
 class AbsPositionalEncoding(nn.Module):
-    """位置编码"""
+    """Absolute Position embedding for Transformer
+    
+    
+    """
     def __init__(self, num_hiddens, dropout=0., max_len=1000):
         super(AbsPositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(dropout)
-        # 创建一个足够长的P
+        # generate a P matrix with shape of (1, max_len, num_hiddens)
         self.P = torch.zeros((1, max_len, num_hiddens))
         X = torch.arange(max_len, dtype=torch.float32).reshape(
             -1, 1) / torch.pow(10000, torch.arange(

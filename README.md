@@ -1,6 +1,6 @@
 # RA-LENet:R-Wave Attention and Local Enhancement for Noise Reduction in ECG Signals
 
-Please feel free to contact with me by Email: [caprilovel@whu.edu.cn](caprilovel@whu.edu.cn) or
+Please feel free to contact with me by Email: [caprilovel@whu.edu.cn](mailto:caprilovel@whu.edu.cn) or
 
 [Create Issues](https://https://github.com/caprilovel/ECG_Denoise/issues) if you have any questions.
 
