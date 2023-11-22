@@ -48,8 +48,4 @@ The other packages you can installed with pip:
 - Package the code and environment into a docker image.
 
 
-## Citation
 
-Please cite our work using the following BibTex if you find it's helpful in your reasearch:
-
-This work is under review in BIBM 2023 now.
