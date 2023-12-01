@@ -25,7 +25,9 @@ random_seed(2023)
 
 noise_intensities = [-4, -2, 0, 2, 4]
 noise_type = ['bw', 'ma', 'em', 'emb']
-models = ['unet', 'DANet', "ralenet_nra", "ralenet_mlp", "ralenet", "ACDAE"]
+
+models = ["newrale"]
+
 
 args = TorchArgs()
 args.add_argument("--intensity_index", type=int, default=0)
@@ -40,17 +42,22 @@ for k,v in args_dict.items():
 batch_size = args_dict['batch_size']    
 noise_name = noise_type[args_dict['noise_type_index']]
 noise_intensity = noise_intensities[args_dict['intensity_index']]
-ecg_data = Ecg_Dataset(noise_name=noise_name, noise_intensity=noise_intensity)
+# ecg_data = Ecg_Dataset(noise_name=noise_name, noise_intensity=noise_intensity)
+# 增加传入external数据的路径
+ecg_data = Ecg_Dataset(noise_name=noise_name, noise_intensity=noise_intensity, path = './ExternalData/dict_data')
 
 def custom_collate_fn(batch):
     # change the data type into FloatTensor
     inputs, targets = zip(*batch)
     return torch.FloatTensor(inputs), torch.FloatTensor(targets)
 
-# since random seed is defined, we can use random.sample to select samples
+
 total_samples = len(ecg_data)
-select_samples = random.sample(range(total_samples), 10000)
-select_dataset = Subset(ecg_data, select_samples)
+all_samples_indices = list(range(total_samples))
+
+# 选择全部数据集
+select_dataset = Subset(ecg_data, all_samples_indices)
+
 train_ratio = 0.8
 test_ratio = 0.2 
 train_size = int(train_ratio * len(select_dataset))
@@ -60,24 +67,12 @@ train_loader = DataLoader(train_dataset, batch_size, shuffle=True, collate_fn=cu
 test_loader = DataLoader(test_dataset, batch_size, shuffle=True, collate_fn=custom_collate_fn)
 
 from denoise_train import train 
+
 if args_dict['model_index'] == 0:
-    from model.UNet import UNet
-    model = UNet()
-if args_dict['model_index'] == 1:
-    from model.DAM import Seq2Seq2
-    model = Seq2Seq2()
-if args_dict['model_index'] == 2:
-    from model.raletransformer import ralenet
-    model = ralenet()
-if args_dict['model_index'] == 3:
-    from model.transformer import ralenet
-    model = ralenet(low_level_enhence=False)
-if args_dict['model_index'] == 4:
-    from model.transformer import ralenet
-    model = ralenet(high_level_enhence=True)
-if args_dict['model_index'] == 5:
-    from model.ACDAE import ACDAE
-    model = ACDAE()
+    from model.ralenet_12leads import newrale, ralenet
+    pretrained_rale_model = ralenet(high_level_enhence=True)
+    pretrained_rale_model.load_state_dict(torch.load(f'./model_save/ralenet/ralenet_99_{noise_name}_intensity{noise_intensity}.pth'))
+    model = newrale(pretrained_rale_model)
 
 model_name = models[args_dict['model_index']]
 

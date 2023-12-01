@@ -88,6 +88,21 @@ denoised_model3 = ralenet(high_level_enhence=True)
 denoised_model3.load_state_dict(torch.load('./model_save/ralenet/ralenet_99_emb_intensity-4.pth'))
 denoised_model3 = denoised_model3.cuda()
 
+from model.ACDAE import ACDAE
+denoised_model4 = ACDAE()
+denoised_model4.load_state_dict(torch.load('./model_save/ACDAE/ACDAE_99_emb_intensity-4.pth'))
+denoised_model4 = denoised_model4.cuda()
+
+from model.raletransformer import ralenet
+denoised_model5 = ralenet()
+denoised_model5.load_state_dict(torch.load('./model_save/ralenet_nra/ralenet_nra_99_emb_intensity-4.pth'))
+denoised_model5 = denoised_model5.cuda()
+
+from model.transformer import ralenet
+denoised_model6 = ralenet(low_level_enhence=False)
+denoised_model6.load_state_dict(torch.load('./model_save/ralenet_mlp/ralenet_mlp_99_emb_intensity-4.pth'))
+denoised_model6 = denoised_model6.cuda()
+
 with torch.no_grad():
     pred_array = []
     label_array = []
@@ -157,6 +172,53 @@ with torch.no_grad():
     print('noised3 test acc: ', acc(pred_array, label_array))
     print('noised3 test precision: ', precision(pred_array, label_array))
     print('noised3 test f1 score: ', f1_score(pred_array, label_array))
+    
+    pred_array = []
+    label_array = []
+    for _, (data, label) in enumerate(noised_test_dataloader):
+        data = data.float().cuda()
+        label = label.long().cuda()
+        data = denoised_model4(data)
+        pred = model(data)
+        pred_array.append(pred)
+        label_array.append(label)
+    pred_array = torch.cat(pred_array, dim=0)
+    label_array = torch.cat(label_array, dim=0)
+    print('noised4 test acc: ', acc(pred_array, label_array))
+    print('noised4 test precision: ', precision(pred_array, label_array))
+    print('noised4 test f1 score: ', f1_score(pred_array, label_array))    
+
+    
+    pred_array = []
+    label_array = []
+    for _, (data, label) in enumerate(noised_test_dataloader):
+        data = data.float().cuda()
+        label = label.long().cuda()
+        data = denoised_model5(data)
+        pred = model(data)
+        pred_array.append(pred)
+        label_array.append(label)
+    pred_array = torch.cat(pred_array, dim=0)
+    label_array = torch.cat(label_array, dim=0)
+    print('ralenet_nra test acc: ', acc(pred_array, label_array))
+    print('ralenet_nra test precision: ', precision(pred_array, label_array))
+    print('ralenet_nra test f1 score: ', f1_score(pred_array, label_array))    
+
+    pred_array = []
+    label_array = []
+    for _, (data, label) in enumerate(noised_test_dataloader):
+        data = data.float().cuda()
+        label = label.long().cuda()
+        data = denoised_model6(data)
+        pred = model(data)
+        pred_array.append(pred)
+        label_array.append(label)
+    pred_array = torch.cat(pred_array, dim=0)
+    label_array = torch.cat(label_array, dim=0)
+    print('ralenet_mlp test acc: ', acc(pred_array, label_array))
+    print('ralenet_mlp test precision: ', precision(pred_array, label_array))
+    print('ralenet_mlp test f1 score: ', f1_score(pred_array, label_array))    
+
     pred_array = []
     label_array = []
     for _, (data, label) in enumerate(noised_test_dataloader):
@@ -173,5 +235,23 @@ with torch.no_grad():
     print('dwt test acc: ', acc(pred_array, label_array))
     print('dwt test precision: ', precision(pred_array, label_array))
     print('dwt test f1 score: ', f1_score(pred_array, label_array))
+    
+    
+    pred_array = []
+    label_array = []
+    for _, (data, label) in enumerate(noised_test_dataloader):
+        data = data.numpy()
+        label = label.long().cuda()
+        from local_utils.denoisefunc import fft_denoise
+        data = fft_denoise(data)
+        data = torch.FloatTensor(data).cuda()
+        pred = model(data)
+        pred_array.append(pred)
+        label_array.append(label)
+    pred_array = torch.cat(pred_array, dim=0)
+    label_array = torch.cat(label_array, dim=0)
+    print('fft test acc: ', acc(pred_array, label_array))
+    print('fft test precision: ', precision(pred_array, label_array))
+    print('fft test f1 score: ', f1_score(pred_array, label_array))
     
 

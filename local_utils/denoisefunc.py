@@ -33,26 +33,34 @@ def wavelet_denoise(ecg_data):
         return np.array(datarec)
 
 
-def fft_denoise(ecg_datas, alpha=1):
+def fft_denoise(ecg_datas, threshold=0.04):
     '''denoise via frequency fourier transform
     
       params:
-        ecg_data: the input ecg data, should be a 2d nparray.
+        ecg_datas: the input ecg data, should be a 2D nparray or a list of 1D nparrays.
         alpha: meta-param for denoise, the threshold of the noise frequency which is the mean frequency. default to be 1.
         
       Output:
-        denoised_data: a 2d ndarray which have the same shape as the input ecg data. 
+        denoised_data: a 2D ndarray which has the same shape as the input ecg data. 
     '''
-    import numpy.fft as nf
-    import numpy as np
+    if isinstance(ecg_datas, list):
+        ecg_datas = np.array(ecg_datas)
+        
     new_ecg_data = []
     for ecg_data in ecg_datas:
-        fft_data = nf.fft(ecg_data)
-        abs_fft_data = np.abs(fft_data)
-        
-        meanf = np.mean(abs_fft_data)
-        noise_index = np.where(abs_fft_data <= alpha * meanf)[0]
-        
-        fft_data[noise_index] = 0
-        new_ecg_data.append(nf.ifft(fft_data))
+        # Apply FFT to the input data
+        ecg_fft = fft(ecg_data)
+
+        # Calculate the magnitude of the FFT coefficients
+        magnitude = np.abs(ecg_fft)
+
+        # Find the threshold for noise reduction
+        cutoff = threshold * np.max(magnitude)
+
+        # Set coefficients below the threshold to zero (remove noise)
+        ecg_fft[magnitude < cutoff] = 0
+
+        # Reconstruct the signal using inverse FFT
+        denoised_ecg = ifft(ecg_fft)
+        new_ecg_data.append(denoised_ecg.real)
     return np.array(new_ecg_data)
