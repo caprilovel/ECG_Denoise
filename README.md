@@ -2,7 +2,7 @@
 
 Please feel free to contact with me by Email: [2021302011121@whu.edu.cn](mailto:2021302011121@whu.edu.cn) or [caprilovel@whu.edu.cn](mailto:caprilovel@whu.edu.cn)
 
-[Create Issues](https://https://github.com/caprilovel/ECG_Denoise/issues) if you have any questions.
+[Create Issues](https://github.com/caprilovel/ECG_Denoise/issues) if you have any questions.
 
 ## Abstract 
 
