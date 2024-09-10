@@ -1,4 +1,5 @@
 # RA-LENet:R-Wave Attention and Local Enhancement for Noise Reduction in ECG Signals
+[Paper](https://ieeexplore.ieee.org/document/10650979)
 
 Please feel free to contact with me by Email: [2021302011121@whu.edu.cn](mailto:2021302011121@whu.edu.cn) or [caprilovel@whu.edu.cn](mailto:caprilovel@whu.edu.cn)
 
@@ -46,6 +47,19 @@ The other packages you can installed with pip:
 ## Todo
 - Restructure the code.
 - Package the code and environment into a docker image.
+## BibTeX
+```
+@INPROCEEDINGS{10650979,
+  author={Zhu, Yaolong and Zhu, Ding and Liu, Juan},
+  booktitle={2024 International Joint Conference on Neural Networks (IJCNN)}, 
+  title={RA-LENet:R-Wave Attention and Local Enhancement for Noise Reduction in ECG Signals}, 
+  year={2024},
+  volume={},
+  number={},
+  pages={1-9},
+  keywords={Noise;Noise reduction;Neural networks;Interference;Electrocardiography;Sensor phenomena and characterization;Feature extraction;ECG signal;denoising;Transformer},
+  doi={10.1109/IJCNN60899.2024.10650979}}
 
+```
 
 
